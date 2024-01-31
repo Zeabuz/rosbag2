@@ -366,21 +366,27 @@ void Recorder::subscribe_topics(
 
 void Recorder::subscribe_topic(const rosbag2_storage::TopicMetadata & topic)
 {
-  // Need to create topic in writer before we are trying to create subscription. Since in
-  // callback for subscription we are calling writer_->write(bag_message); and it could happened
-  // that callback called before we reached out the line: writer_->create_topic(topic)
-  writer_->create_topic(topic);
+  if (subscriptions_.find(topic.name) == subscriptions_.end()) {
+    // Need to create topic in writer before we are trying to create subscription. Since in
+    // callback for subscription we are calling writer_->write(bag_message); and it could happened
+    // that callback called before we reached out the line: writer_->create_topic(topic)
+    writer_->create_topic(topic);
 
-  Rosbag2QoS subscription_qos{subscription_qos_for_topic(topic.name)};
-  auto subscription = create_subscription(topic.name, topic.type, subscription_qos);
-  if (subscription) {
-    subscriptions_.insert({topic.name, subscription});
-    RCLCPP_INFO_STREAM(
-      this->get_logger(),
-      "Subscribed to topic '" << topic.name << "'");
+    Rosbag2QoS subscription_qos{subscription_qos_for_topic(topic.name)};
+    auto subscription = create_subscription(topic.name, topic.type, subscription_qos);
+    if (subscription) {
+      subscriptions_.insert({topic.name, subscription});
+      RCLCPP_INFO_STREAM(
+        this->get_logger(),
+        "Subscribed to topic '" << topic.name << "'");
+    } else {
+      writer_->remove_topic(topic);
+      subscriptions_.erase(topic.name);
+    }
   } else {
-    writer_->remove_topic(topic);
-    subscriptions_.erase(topic.name);
+    RCLCPP_ERROR_STREAM(
+        this->get_logger(),
+        "Attempted to subscribe to '" << topic.name << "' that has already been subscribed to");
   }
 }
 
