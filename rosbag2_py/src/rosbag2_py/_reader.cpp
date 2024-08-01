@@ -44,8 +44,8 @@ public:
   }
 
   void open(
-    rosbag2_storage::StorageOptions & storage_options,
-    rosbag2_cpp::ConverterOptions & converter_options = rosbag2_cpp::ConverterOptions())
+    const rosbag2_storage::StorageOptions & storage_options,
+    const rosbag2_cpp::ConverterOptions & converter_options = rosbag2_cpp::ConverterOptions())
   {
     reader_->open(storage_options, converter_options);
   }
